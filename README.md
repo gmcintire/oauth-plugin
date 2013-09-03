@@ -1,5 +1,5 @@
-= OAuth Plugin
-
+OAuth Plugin
+============
 This is a plugin for implementing OAuth Providers and Consumers in Rails applications.
 
 We support the revised OAuth 1.0a specs at:
@@ -14,7 +14,8 @@ Find out more on the OAuth site at:
 
 http://oauth.net
 
-== IMPORTANT note for people upgrading the provider
+IMPORTANT note for people upgrading the provider
+================================================
 
 There are several changes to the latest OAuth 2.0 spec which requires a couple of changes to 2 models which you are REQUIRED to update manually if you are supporting OAuth2.
 
@@ -84,13 +85,15 @@ end
 
 There are matching specs for these which you may want to move into your project as well.
 
-== Requirements
+Requirements
+============
 
 You need to install the oauth gem (0.4.4) which is the core OAuth ruby library. It will likely NOT work on any previous version of the gem.
 
   gem install oauth
 
-== Installation (Rails 3.0)
+Installation (Rails 3.0)
+========================
 
 Add the plugin to your Gemfile:
 
@@ -100,8 +103,8 @@ And install it:
 
   bundle install
 
-== Installation (Rails 2.x)
-
+Installation (Rails 2.x)
+========================
 The plugin can now be installed as an gem from github, which is the easiest way to keep it up to date.
 
   gem install oauth-plugin --pre
@@ -124,7 +127,8 @@ I think the only real issue is that the views have .html.erb extensions. So thes
 
 Please let me know if this works and I will see if I can make the generator conditionally create .rhtml for pre 2.0 versions of RAILS.
 
-== OAuth Provider generator (Rails 3)
+OAuth Provider generator (Rails 3)
+==================================
 
 This currently supports rspec, test_unit, haml, erb, active_record and mongoid:
 
@@ -134,8 +138,8 @@ This generates OAuth and OAuth client controllers as well as the required models
 
 It requires an authentication framework such as acts_as_authenticated, restful_authentication or restful_open_id_authentication. It also requires Rails 2.0.
 
-=== INSTALL RACK FILTER (NEW)
-
+INSTALL RACK FILTER (NEW)
+-------------------------
 A big change over previous versions is that we now use a rack filter. You have to install this in your application.rb file:
 
   require 'oauth/rack/oauth_filter'
