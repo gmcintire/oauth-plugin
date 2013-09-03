@@ -20,65 +20,67 @@ There are several changes to the latest OAuth 2.0 spec which requires a couple o
 
 https://github.com/pelle/oauth-plugin/blob/master/lib/generators/active_record/oauth_provider_templates/oauth2_token.rb
 
-  class Oauth2Token < AccessToken
-    attr_accessor :state
-    def as_json(options={})
-      d = {:access_token=>token, :token_type => 'bearer'}
-      d[:expires_in] = expires_in if expires_at
-      d
-    end
-
-    def to_query
-      q = "access_token=#{token}&token_type=bearer"
-      q << "&state=#{URI.escape(state)}" if @state
-      q << "&expires_in=#{expires_in}" if expires_at
-      q << "&scope=#{URI.escape(scope)}" if scope
-      q
-    end
-
-    def expires_in
-      expires_at.to_i - Time.now.to_i
-    end
+```ruby
+class Oauth2Token < AccessToken
+  attr_accessor :state
+  def as_json(options={})
+    d = {:access_token=>token, :token_type => 'bearer'}
+    d[:expires_in] = expires_in if expires_at
+    d
   end
 
+  def to_query
+    q = "access_token=#{token}&token_type=bearer"
+    q << "&state=#{URI.escape(state)}" if @state
+    q << "&expires_in=#{expires_in}" if expires_at
+    q << "&scope=#{URI.escape(scope)}" if scope
+    q
+  end
+
+  def expires_in
+    expires_at.to_i - Time.now.to_i
+  end
+end
+```
 
 https://github.com/pelle/oauth-plugin/blob/master/lib/generators/active_record/oauth_provider_templates/oauth2_verifier.rb
 
-  class Oauth2Verifier < OauthToken
-    validates_presence_of :user
-    attr_accessor :state
+```ruby
+class Oauth2Verifier < OauthToken
+  validates_presence_of :user
+  attr_accessor :state
 
-    def exchange!(params={})
-      OauthToken.transaction do
-        token = Oauth2Token.create! :user=>user,:client_application=>client_application, :scope => scope
-        invalidate!
-        token
-      end
-    end
-
-    def code
+  def exchange!(params={})
+    OauthToken.transaction do
+      token = Oauth2Token.create! :user=>user,:client_application=>client_application, :scope => scope
+      invalidate!
       token
     end
-
-    def redirect_url
-      callback_url
-    end
-
-    def to_query
-      q = "code=#{token}"
-      q << "&state=#{URI.escape(state)}" if @state
-      q
-    end
-
-    protected
-
-    def generate_keys
-      self.token = OAuth::Helper.generate_key(20)[0,20]
-      self.expires_at = 10.minutes.from_now
-      self.authorized_at = Time.now
-    end
-
   end
+
+  def code
+    token
+  end
+
+  def redirect_url
+    callback_url
+  end
+
+  def to_query
+    q = "code=#{token}"
+    q << "&state=#{URI.escape(state)}" if @state
+    q
+  end
+
+  protected
+
+  def generate_keys
+    self.token = OAuth::Helper.generate_key(20)[0,20]
+    self.expires_at = 10.minutes.from_now
+    self.authorized_at = Time.now
+  end
+end
+```
 
 There are matching specs for these which you may want to move into your project as well.
 
@@ -106,9 +108,10 @@ The plugin can now be installed as an gem from github, which is the easiest way 
 
 You should add the following in the gem dependency section of environment.rb
 
-  config.gem "oauth"
-  config.gem "oauth-plugin"
-
+```ruby
+config.gem "oauth"
+config.gem "oauth-plugin"
+```
 Alternatively you can install it in vendors/plugin:
 
   script/plugin install git://github.com/pelle/oauth-plugin.git
@@ -143,18 +146,22 @@ A big change over previous versions is that we now use a rack filter. You have t
 
 The generator supports the defaults you have created in your application.rb file. eg:
 
-  config.generators do |g|
-    g.orm             :mongoid
-    g.template_engine :haml
-    g.test_framework  :rspec
-  end
+```ruby
+config.generators do |g|
+  g.orm             :mongoid
+  g.template_engine :haml
+  g.test_framework  :rspec
+end
+```
 
 === User Model
 
 Add the following lines to your user model:
 
-  has_many :client_applications
-  has_many :tokens, :class_name => "OauthToken", :order => "authorized_at desc", :include => [:client_application]
+```ruby
+has_many :client_applications
+has_many :tokens, :class_name => "OauthToken", :order => "authorized_at desc", :include => [:client_application]
+```
 
 == OAuth Provider generator (Rails 2)
 
@@ -178,8 +185,10 @@ These can of course be used individually as well.
 
 Add the following lines to your user model:
 
-  has_many :client_applications
-  has_many :tokens, :class_name => "OauthToken", :order => "authorized_at desc", :include => [:client_application]
+```ruby
+has_many :client_applications
+has_many :tokens, :class_name => "OauthToken", :order => "authorized_at desc", :include => [:client_application]
+```
 
 === Migrate database
 
@@ -203,17 +212,19 @@ You need to add a migration:
 
 Make it look like this:
 
-  class UpgradeOauth < ActiveRecord::Migration
-    def self.up
-      add_column :oauth_tokens, :callback_url, :string
-      add_column :oauth_tokens, :verifier, :string, :limit => 20
-    end
-
-    def self.down
-      remove_column :oauth_tokens, :callback_url
-      remove_column :oauth_tokens, :verifier
-    end
+```ruby
+class UpgradeOauth < ActiveRecord::Migration
+  def self.up
+    add_column :oauth_tokens, :callback_url, :string
+    add_column :oauth_tokens, :verifier, :string, :limit => 20
   end
+
+  def self.down
+    remove_column :oauth_tokens, :callback_url
+    remove_column :oauth_tokens, :verifier
+  end
+end
+```
 
 === Change code
 
@@ -227,13 +238,17 @@ There are changes to the following files:
 
 Add the following towards the top of the model class
 
-  attr_accessor :token_callback_url
+```ruby
+attr_accessor :token_callback_url
+```
 
 Then change the create_request_token method to the following:
 
-  def create_request_token
-    RequestToken.create :client_application => self, :callback_url => token_callback_url
-  end
+```ruby
+def create_request_token
+  RequestToken.create :client_application => self, :callback_url => token_callback_url
+end
+```
 
 === Changes in request_token.rb
 
@@ -241,88 +256,93 @@ The RequestToken contains the bulk of the changes so it's easiest to list it in 
 
 Make sure it looks like this:
 
-  class RequestToken < OauthToken
+```ruby
+class RequestToken < OauthToken
 
-    attr_accessor :provided_oauth_verifier
+  attr_accessor :provided_oauth_verifier
 
-    def authorize!(user)
-      return false if authorized?
-      self.user = user
-      self.authorized_at = Time.now
-      self.verifier=OAuth::Helper.generate_key(16)[0,20] unless oauth10?
-      self.save
-    end
-
-    def exchange!
-      return false unless authorized?
-      return false unless oauth10? || verifier == provided_oauth_verifier
-
-      RequestToken.transaction do
-        access_token = AccessToken.create(:user => user, :client_application => client_application)
-        invalidate!
-        access_token
-      end
-    end
-
-    def to_query
-      if oauth10?
-        super
-      else
-        "#{super}&oauth_callback_confirmed = true"
-      end
-    end
-
-    def oob?
-      self.callback_url == 'oob'
-    end
-
-    def oauth10?
-      (defined? OAUTH_10_SUPPORT) && OAUTH_10_SUPPORT && self.callback_url.blank?
-    end
-
+  def authorize!(user)
+    return false if authorized?
+    self.user = user
+    self.authorized_at = Time.now
+    self.verifier=OAuth::Helper.generate_key(16)[0,20] unless oauth10?
+    self.save
   end
 
+  def exchange!
+    return false unless authorized?
+    return false unless oauth10? || verifier == provided_oauth_verifier
+
+    RequestToken.transaction do
+      access_token = AccessToken.create(:user => user, :client_application => client_application)
+      invalidate!
+      access_token
+    end
+  end
+
+  def to_query
+    if oauth10?
+      super
+    else
+      "#{super}&oauth_callback_confirmed = true"
+    end
+  end
+
+  def oob?
+    self.callback_url == 'oob'
+  end
+
+  def oauth10?
+    (defined? OAUTH_10_SUPPORT) && OAUTH_10_SUPPORT && self.callback_url.blank?
+  end
+
+end
+```
 === Changes in oauth_controller
 
 All you need to do here is the change the authorize action to use the request_token callback url and add the oauth_verifier to the callback url.
 
-  def authorize
-    @token = ::RequestToken.find_by_token params[:oauth_token]
-    unless @token.invalidated?
-      if request.post?
-        if params[:authorize] == '1'
-          @token.authorize!(current_user)
-          if @token.oauth10?
-            @redirect_url = params[:oauth_callback] || @token.client_application.callback_url
-          else
-            @redirect_url = @token.oob? ? @token.client_application.callback_url : @token.callback_url
-          end
-
-          if @redirect_url
-            if @token.oauth10?
-              redirect_to "#{@redirect_url}?oauth_token=#{@token.token}"
-            else
-              redirect_to "#{@redirect_url}?oauth_token=#{@token.token}&oauth_verifier=#{@token.verifier}"
-            end
-          else
-            render :action => "authorize_success"
-          end
-        elsif params[:authorize] == "0"
-          @token.invalidate!
-          render :action => "authorize_failure"
+```ruby
+def authorize
+  @token = ::RequestToken.find_by_token params[:oauth_token]
+  unless @token.invalidated?
+    if request.post?
+      if params[:authorize] == '1'
+        @token.authorize!(current_user)
+        if @token.oauth10?
+          @redirect_url = params[:oauth_callback] || @token.client_application.callback_url
+        else
+          @redirect_url = @token.oob? ? @token.client_application.callback_url : @token.callback_url
         end
+
+        if @redirect_url
+          if @token.oauth10?
+            redirect_to "#{@redirect_url}?oauth_token=#{@token.token}"
+          else
+            redirect_to "#{@redirect_url}?oauth_token=#{@token.token}&oauth_verifier=#{@token.verifier}"
+          end
+        else
+          render :action => "authorize_success"
+        end
+      elsif params[:authorize] == "0"
+        @token.invalidate!
+        render :action => "authorize_failure"
       end
-    else
-      render :action => "authorize_failure"
     end
+  else
+    render :action => "authorize_failure"
   end
+end
+```
 
 Alternatively if you haven't customized your controller you can replace the full controller with this:
 
-  require 'oauth/controllers/provider_controller'
-  class OauthController < ApplicationController
-    include OAuth::Controllers::ProviderController
-  end
+```ruby
+require 'oauth/controllers/provider_controller'
+class OauthController < ApplicationController
+  include OAuth::Controllers::ProviderController
+end
+```
 
 This way the controller will automatically include bug fixes in future versions of the plugin.
 
@@ -350,12 +370,16 @@ If you want to give oauth access to everything a registered user can do, just re
 
 If you want to restrict consumers to the index and show methods of your controller do the following:
 
-  before_filter :login_required, :except => [:show,:index]
-  before_filter :login_or_oauth_required, :only => [:show,:index]
+```ruby
+before_filter :login_required, :except => [:show,:index]
+before_filter :login_or_oauth_required, :only => [:show,:index]
+```
 
 If you have an action you only want used via oauth:
 
-  before_filter :oauth_required
+```ruby
+before_filter :oauth_required
+```
 
 All of these places the tokens user in current_user as you would expect. It also exposes the following methods:
 
@@ -394,36 +418,38 @@ All configuration of applications is done in
 
 Add entries to OAUTH_CREDENTIALS for all OAuth Applications you wish to connect to. Get this information by registering your application at the particular applications developer page.
 
-  OAUTH_CREDENTIALS = {
-    :twitter => {
-      :key => "key",
-      :secret => "secret",
-      :client => :twitter_gem, # :twitter_gem or :oauth_gem (defaults to :twitter_gem)
-      :expose => false, # set to true to expose client via the web
-    },
-    :agree2 => {
-      :key => "key",
-      :secret => "secret",
-      :expose => false, # set to true to expose client via the web
-    },
-    :hour_feed => {
-      :key => "",
-      :secret => "",
-      :options = {
-        :site => "http://hourfeed.com"
-      }
-    },
-    :nu_bux => {
-      :key => "",
-      :secret => "",
-      :super_class => "OpenTransactToken",  # if a OAuth service follows a particular standard
-                                          # with a token implementation you can set the superclass
-                                          # to use
-      :options => {
-        :site => "http://nubux.heroku.com"
-      }
+```ruby
+OAUTH_CREDENTIALS = {
+  :twitter => {
+    :key => "key",
+    :secret => "secret",
+    :client => :twitter_gem, # :twitter_gem or :oauth_gem (defaults to :twitter_gem)
+    :expose => false, # set to true to expose client via the web
+  },
+  :agree2 => {
+    :key => "key",
+    :secret => "secret",
+    :expose => false, # set to true to expose client via the web
+  },
+  :hour_feed => {
+    :key => "",
+    :secret => "",
+    :options = {
+      :site => "http://hourfeed.com"
+    }
+  },
+  :nu_bux => {
+    :key => "",
+    :secret => "",
+    :super_class => "OpenTransactToken",  # if a OAuth service follows a particular standard
+                                        # with a token implementation you can set the superclass
+                                        # to use
+    :options => {
+      :site => "http://nubux.heroku.com"
     }
   }
+}
+```
 
 You can add any of the options that the OAuth::Consumer.new accepts to the options hash: http://oauth.rubyforge.org/rdoc/classes/OAuth/Consumer.html
 
@@ -437,17 +463,23 @@ eg. If you connect to Yahoo's FireEagle you would add the :fire_eagle entry to O
 
 This allows you to add a has_one association in your user model:
 
-  has_one  :fire_eagle, :class_name => "FireEagleToken", :dependent => :destroy
+```ruby
+has_one  :fire_eagle, :class_name => "FireEagleToken", :dependent => :destroy
+```
 
 And you could do:
 
-  @location = @user.fire_eagle.client.location
+```ruby
+@location = @user.fire_eagle.client.location
+```
 
 The client method gives you a OAuth::AccessToken which you can use to perform rest operations on the client site - see http://oauth.rubyforge.org/rdoc/classes/OAuth/AccessToken.html
 
 If you are using Mongoid you want to add an embeds_many association in your user model:
 
-  embeds_many :consumer_tokens
+```ruby
+embeds_many :consumer_tokens
+```
 
 === Custom ConsumerToken models
 
@@ -477,13 +509,15 @@ You can specify this url to the service you're calling when you register, but it
 
 This is designed to let your local javascript apps access remote OAuth apis. You have to specifically enable this by adding the expose flag to your oauth config file. eg:
 
-  OAUTH_CREDENTIALS = {
-    :twitter => {
-      :key => "key",
-      :secret => "secret",
-      :client => :oauth_gem, # :twitter_gem or :oauth_gem (defaults to :twitter_gem)
-      :expose => true      # set to true to expose client via the web
-    }
+```ruby
+OAUTH_CREDENTIALS = {
+  :twitter => {
+    :key => "key",
+    :secret => "secret",
+    :client => :oauth_gem, # :twitter_gem or :oauth_gem (defaults to :twitter_gem)
+    :expose => true      # set to true to expose client via the web
+  }
+```
 
 Once the user has authorized your application, you can access the client APIs via:
 
